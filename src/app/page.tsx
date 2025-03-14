@@ -153,7 +153,8 @@ export default function Home() {
                   Drag and drop your image here, or click to browse
                 </p>
                 <p className="text-center text-white/60 text-lg mt-4">
-                  All images will be resized to reduced to 25 MP and lower.
+                  Uploaded will be reduced to 25 MP so you can upload to Shopify
+                  easily.
                 </p>
               </div>
             </motion.div>
