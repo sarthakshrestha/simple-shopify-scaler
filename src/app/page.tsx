@@ -1,103 +1,239 @@
-import Image from "next/image";
+"use client";
+import React, { useState, useEffect } from "react";
+import { useDropzone } from "react-dropzone";
+import { motion } from "framer-motion";
+import { Loader2, Upload, Download, Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [fileName, setFileName] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  // Initialize theme based on system preference
+  useEffect(() => {
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+    setDarkMode(prefersDark);
+    if (prefersDark) {
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  // Toggle theme function
+  const toggleTheme = () => {
+    setDarkMode(!darkMode);
+    if (darkMode) {
+      document.documentElement.classList.remove("dark");
+    } else {
+      document.documentElement.classList.add("dark");
+    }
+  };
+
+  const resizeImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const TARGET_WIDTH = 2048;
+
+        // Calculate height to maintain aspect ratio
+        const aspectRatio = img.height / img.width;
+        const newHeight = Math.round(TARGET_WIDTH * aspectRatio);
+
+        // Set canvas dimensions
+        canvas.width = TARGET_WIDTH;
+        canvas.height = newHeight;
+
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, TARGET_WIDTH, newHeight);
+
+        // Convert to blob and create URL
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const url = URL.createObjectURL(blob);
+              resolve(url);
+            } else {
+              reject(new Error("Failed to create blob"));
+            }
+          },
+          file.type,
+          0.9 // Quality
+        );
+      };
+
+      img.onerror = () => reject(new Error("Failed to load image"));
+
+      // Load the image
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const onDrop = async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    setFileName(file.name);
+    setIsProcessing(true);
+    setProgress(0);
+    setDownloadUrl(null);
+
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 200);
+
+    try {
+      const url = await resizeImage(file);
+      setDownloadUrl(url);
+
+      // Complete the progress
+      clearInterval(progressInterval);
+      setProgress(100);
+
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 500);
+    } catch (error) {
+      console.error("Error resizing image:", error);
+      setIsProcessing(false);
+      clearInterval(progressInterval);
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      "image/*": [".png", ".jpg", ".jpeg", ".webp"],
+    },
+  });
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 md:p-8 bg-gradient-to-b overflow-y-hidden from-zinc-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-800 transition-colors duration-300">
+      <div className="absolute top-6 right-6 flex items-center space-x-2">
+        <Sun className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+        <Switch
+          id="theme-toggle"
+          checked={darkMode}
+          onCheckedChange={toggleTheme}
+        />
+        <Moon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+        <Label htmlFor="theme-toggle" className="sr-only">
+          Toggle theme
+        </Label>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-7xl text-center mb-8"
+      >
+        <h1 className="text-3xl md:text-4xl lg:text-7xl font-black mb-4 text-gray-800 dark:text-gray-100 transition-colors duration-300">
+          Shopify Image Resizer
+        </h1>
+        <p className="text-2xl md:text-3xl text-gray-600 dark:text-gray-300 transition-colors duration-300">
+          Resize your images to go below 25 MP with just a drop.
+        </p>
+      </motion.div>
+
+      <motion.div layout className="w-full max-w-4xl">
+        <Card className="border-none shadow-none bg-white dark:bg-gray-850 transition-colors duration-300">
+          <CardContent className="p-6">
+            <motion.div whileTap={{ scale: 0.99 }} className="w-full">
+              <div
+                {...getRootProps()}
+                className={`
+                  border-2 border-dashed rounded-lg p-12 flex flex-col items-center justify-center cursor-pointer
+                  transition-all duration-300 ease-in-out
+                  ${
+                    isDragActive
+                      ? "border-primary bg-primary/10"
+                      : "border-gray-300 dark:border-gray-600 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-50"
+                  }
+                `}
+              >
+                <input {...getInputProps()} />
+
+                <motion.div
+                  animate={{ scale: isDragActive ? 1.1 : 1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                  className="mb-4"
+                >
+                  <Upload
+                    size={64}
+                    className="text-gray-400 dark:text-gray-500"
+                  />
+                </motion.div>
+
+                <h2 className="text-3xl md:text-4xl items-center justify-center text-center font-bold text-zinc-800 dark:text-zinc-800 mb-3 transition-colors duration-300">
+                  {isDragActive ? "Drop it here!" : "Upload an image"}
+                </h2>
+
+                <p className="text-center text-gray-500 dark:text-zinc-600 text-xl transition-colors duration-300">
+                  Drag and drop your image here, or click to browse
+                </p>
+                <p className="text-center text-gray-400 dark:text-gray-500 text-lg mt-4 transition-colors duration-300">
+                  All images will be resized to reduced to 25 MP and lower.
+                </p>
+              </div>
+            </motion.div>
+
+            {isProcessing && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="mt-6"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xl text-gray-700 dark:text-zinc-800 transition-colors duration-300">
+                    Processing {fileName}
+                  </p>
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+                <Progress value={progress} className="h-3" />
+              </motion.div>
+            )}
+
+            {downloadUrl && !isProcessing && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-6"
+              >
+                <Button
+                  asChild
+                  className="w-full py-8 text-xl flex items-center justify-center gap-3"
+                  size="lg"
+                >
+                  <a
+                    href={downloadUrl}
+                    download={`resized-${fileName || "image.jpg"}`}
+                  >
+                    <Download className="h-6 w-6 mr-2" />
+                    Download Resized Image (Below 25 MP)
+                  </a>
+                </Button>
+              </motion.div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }
