@@ -108,8 +108,8 @@ export default function Home() {
   });
 
   return (
-    <div className="flex flex-col bg-gradient-to-b from-gray-300 via-gray-700 to-zinc-900 items-center justify-center min-h-screen p-4 md:p-8 relative overflow-hidden">
-      <div className="absolute inset-0 z-0 opacity-30 ">
+    <div className="flex flex-col bg-gradient-to-b from-gray-400 via-gray-500 to-gray-600  items-center justify-center h-screen w-screen p-4 md:p-8 relative overflow-y-auto max-sm:p-6">
+      <div className="absolute inset-0 z-0 h-screen w-screen blur-xl opacity-40">
         <Background />
       </div>
       {/* Novatrix Background with lowered opacity container */}
@@ -156,10 +156,10 @@ export default function Home() {
                   {isDragActive ? "Drop it here!" : "Upload images"}
                 </h2>
 
-                <p className="text-center text-white/80 text-xl">
+                <p className="text-center text-white/80 text-xl max-sm:text-lg">
                   Drag and drop your images here, or click to browse
                 </p>
-                <p className="text-center text-white/60 text-lg mt-4">
+                <p className="text-center text-white/60 text-lg mt-4 max-sm:text-lg">
                   Uploaded images will be resized to 2048px width.
                 </p>
               </div>
