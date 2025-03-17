@@ -196,7 +196,7 @@ export default function Home() {
                 <div className="flex justify-center gap-4 mt-4">
                   <Button
                     asChild
-                    className="py-4 sm:py-8 text-base sm:text-xl flex items-center justify-center gap-2 sm:gap-3 bg-white/20 hover:bg-white/30 text-white"
+                    className="py-4 sm:py-8 text-base sm:text-xl flex items-center justify-center gap-2 sm:gap-3 bg-white/5 hover:bg-white/10 text-white"
                     size="lg"
                   >
                     <a
