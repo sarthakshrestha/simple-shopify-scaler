@@ -108,18 +108,18 @@ export default function Home() {
   });
 
   return (
-    <div className="flex flex-col bg-gradient-to-b from-gray-400 via-gray-500 to-gray-600  items-center justify-center h-screen w-screen p-4 md:p-8 relative overflow-y-auto max-sm:p-6">
-      <div className="absolute inset-0 z-0 h-screen w-screen blur-xl opacity-40">
+    <div className="flex flex-col bg-gradient-to-b from-zinc-300 via-zinc-600 to-zinc-600  items-center justify-center h-screen w-screen p-4 md:p-8 relative overflow-y-auto max-sm:p-6">
+      {/* Novatrix Background with lowered opacity container */}
+      <div className="absolute inset-0 z-0 opacity-70 ">
         <Background />
       </div>
-      {/* Novatrix Background with lowered opacity container */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-7xl text-center mb-8 relative z-10 backdrop-blur-xs"
       >
-        <h1 className="text-5xl md:text-4xl lg:text-7xl font-semibold text-white mb-4">
+        <h1 className="text-5xl md:text-4xl lg:text-7xl text-white mb-4">
           Shopify Image Resizer
         </h1>
         <p className="text-2xl md:text-3xl text-white">
