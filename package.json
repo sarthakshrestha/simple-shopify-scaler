@@ -15,7 +15,9 @@
     "@radix-ui/react-switch": "^1.1.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "file-saver": "^2.0.5",
     "framer-motion": "^12.5.0",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.479.0",
     "next": "15.2.2",
     "ogl": "^1.0.11",
@@ -28,6 +30,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

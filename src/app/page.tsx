@@ -1,19 +1,25 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
-import { Loader2, Upload, Download } from "lucide-react";
+import { Loader2, Upload, Download, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import Background from "@/components/eldoraui/novatrixbg";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+
 export default function Home() {
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [resizedFiles, setResizedFiles] = useState<
+    { name: string; blob: Blob; url: string }[]
+  >([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [fileName, setFileName] = useState("");
 
-  const resizeImage = (file: File): Promise<string> => {
+  const resizeImage = (
+    file: File
+  ): Promise<{ name: string; blob: Blob; url: string }> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -36,7 +42,7 @@ export default function Home() {
           (blob) => {
             if (blob) {
               const url = URL.createObjectURL(blob);
-              resolve(url);
+              resolve({ name: file.name, blob, url });
             } else {
               reject(new Error("Failed to create blob"));
             }
@@ -54,41 +60,44 @@ export default function Home() {
   };
 
   const onDrop = async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
+    if (acceptedFiles.length === 0) return;
 
-    setFileName(file.name);
     setIsProcessing(true);
     setProgress(0);
-    setDownloadUrl(null);
+    setResizedFiles([]);
 
-    // Simulate progress
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 200);
+    const resizedImages: { name: string; blob: Blob; url: string }[] = [];
+    const progressStep = 100 / acceptedFiles.length;
 
-    try {
-      const url = await resizeImage(file);
-      setDownloadUrl(url);
-
-      // Complete the progress
-      clearInterval(progressInterval);
-      setProgress(100);
-
-      setTimeout(() => {
-        setIsProcessing(false);
-      }, 500);
-    } catch (error) {
-      console.error("Error resizing image:", error);
-      setIsProcessing(false);
-      clearInterval(progressInterval);
+    for (const file of acceptedFiles) {
+      try {
+        const resizedImage = await resizeImage(file);
+        resizedImages.push(resizedImage);
+        setProgress((prev) => prev + progressStep);
+      } catch (error) {
+        console.error("Error resizing image:", error);
+      }
     }
+
+    setResizedFiles(resizedImages);
+    setIsProcessing(false);
+    setProgress(100);
+  };
+
+  const downloadZip = async () => {
+    const zip = new JSZip();
+    resizedFiles.forEach(({ name, blob }) => {
+      zip.file(name, blob);
+    });
+
+    const content = await zip.generateAsync({ type: "blob" });
+    saveAs(content, "resized-images.zip");
+  };
+
+  const resetState = () => {
+    setResizedFiles([]);
+    setIsProcessing(false);
+    setProgress(0);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -99,26 +108,24 @@ export default function Home() {
   });
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen  p-4 md:p-8 relative overflow-hidden">
-      {/* Novatrix Background with lowered opacity container */}
-      <div className="absolute inset-0 z-0 opacity-80 blur-md">
+    <div className="flex flex-col bg-gradient-to-b from-gray-300 via-gray-700 to-zinc-900 items-center justify-center min-h-screen p-4 md:p-8 relative overflow-hidden">
+      <div className="absolute inset-0 z-0 opacity-30 ">
         <Background />
       </div>
-
+      {/* Novatrix Background with lowered opacity container */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-7xl text-center mb-8 relative z-10  backdrop-blur-xs"
+        className="w-full max-w-7xl text-center mb-8 relative z-10 backdrop-blur-xs"
       >
-        <h1 className="text-5xl md:text-4xl lg:text-7xl font-medium text-zinc-700 mb-4 ">
+        <h1 className="text-5xl md:text-4xl lg:text-7xl font-semibold text-white mb-4">
           Shopify Image Resizer
         </h1>
-        <p className="text-2xl md:text-3xl text-zinc-600">
+        <p className="text-2xl md:text-3xl text-white">
           Resize your images to go below 25 MP with just a drop.
         </p>
       </motion.div>
-
       <motion.div layout className="w-full max-w-4xl relative z-10">
         <Card className="border-none shadow-xl bg-black/30 backdrop-blur-sm">
           <CardContent className="p-6">
@@ -146,15 +153,14 @@ export default function Home() {
                 </motion.div>
 
                 <h2 className="text-3xl md:text-4xl items-center justify-center text-center font-bold text-white mb-3">
-                  {isDragActive ? "Drop it here!" : "Upload an image"}
+                  {isDragActive ? "Drop it here!" : "Upload images"}
                 </h2>
 
                 <p className="text-center text-white/80 text-xl">
-                  Drag and drop your image here, or click to browse
+                  Drag and drop your images here, or click to browse
                 </p>
                 <p className="text-center text-white/60 text-lg mt-4">
-                  Uploaded will be reduced to 25 MP so you can upload to Shopify
-                  easily.
+                  Uploaded images will be resized to 2048px width.
                 </p>
               </div>
             </motion.div>
@@ -166,35 +172,78 @@ export default function Home() {
                 className="mt-6"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xl text-white/90">Processing {fileName}</p>
+                  <p className="text-xl text-white/90">Processing...</p>
                   <Loader2 className="h-6 w-6 animate-spin text-white" />
                 </div>
                 <Progress value={progress} className="h-3" />
               </motion.div>
             )}
 
-            {downloadUrl && !isProcessing && (
+            {resizedFiles.length === 1 && !isProcessing && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
                 className="mt-6 w-full px-4 sm:px-0"
               >
-                <Button
-                  asChild
-                  className="w-full py-4 sm:py-8 text-base sm:text-xl flex items-center justify-center gap-2 sm:gap-3 bg-white/20 hover:bg-white/30 text-white"
-                  size="lg"
-                >
-                  <a
-                    href={downloadUrl}
-                    download={`resized-${fileName || "image.jpg"}`}
+                <Card className="w-full max-w-sm mx-auto bg-white/10 p-4 rounded-lg">
+                  <img
+                    src={resizedFiles[0].url}
+                    alt={resizedFiles[0].name}
+                    className="w-full h-64 object-cover rounded-lg"
+                  />
+                </Card>
+                <div className="flex justify-center gap-4 mt-4">
+                  <Button
+                    asChild
+                    className="py-4 sm:py-8 text-base sm:text-xl flex items-center justify-center gap-2 sm:gap-3 bg-white/20 hover:bg-white/30 text-white"
+                    size="lg"
+                  >
+                    <a
+                      href={resizedFiles[0].url}
+                      download={`resized-${resizedFiles[0].name}`}
+                    >
+                      <Download className="h-4 w-4 sm:h-6 sm:w-6 mr-1 sm:mr-2" />
+                      Download Resized Image
+                    </a>
+                  </Button>
+                  <Button
+                    onClick={resetState}
+                    className="py-4 sm:py-8 text-base hover:cursor-pointer sm:text-xl flex items-center justify-center gap-2 sm:gap-3 bg-black/30 hover:bg-opacity-80 text-white"
+                    size="lg"
+                  >
+                    <RotateCw className="h-4 w-4 sm:h-6 sm:w-6" />
+                    Retry
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {resizedFiles.length > 1 && !isProcessing && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-6 w-full px-4 sm:px-0"
+              >
+                <div className="flex justify-center gap-4">
+                  <Button
+                    onClick={downloadZip}
+                    className="py-4 sm:py-8 text-base sm:text-xl hover:cursor-pointer flex items-center justify-center gap-2 sm:gap-3 bg-white/20 hover:bg-white/30 text-white"
+                    size="lg"
                   >
                     <Download className="h-4 w-4 sm:h-6 sm:w-6 mr-1 sm:mr-2" />
-                    <span className="text-sm sm:text-base md:text-xl">
-                      Download Resized Image
-                    </span>
-                  </a>
-                </Button>
+                    Download All Resized Images (ZIP)
+                  </Button>
+                  <Button
+                    onClick={resetState}
+                    className="py-4 sm:py-8 text-base sm:text-xl hover:cursor-pointer flex items-center justify-center gap-2 sm:gap-3 bg-black/30 hover:bg-opacity-80 text-white"
+                    size="lg"
+                  >
+                    <RotateCw className="h-4 w-4 sm:h-6 sm:w-6" />
+                    Retry
+                  </Button>
+                </div>
               </motion.div>
             )}
           </CardContent>
